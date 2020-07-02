@@ -1,32 +1,3 @@
-/**********
-Copyright (c) 2019, Xilinx, Inc.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**********/
-
 /*****
 This example demonstrates how PLRAM feature of the Vitis memory subsystem and how they 
 integrate with the Vitis design process.
@@ -40,15 +11,31 @@ memory resources managed by the Vitis memory subsystem.
 #include "xcl2.hpp"
 #include <algorithm>
 #include <stdlib.h>
+#include <ctime>
 #include <vector>
 //Array Size to access
-#define DATA_SIZE 8
+#define DATA_SIZE 32
 
 //Binary File string
 std::string binaryFile;
 
-//CPU implementation of Matrix Multiplication
-//The inputs are of the size (DATA_SIZE x DATA_SIZE)
+class Timer {
+  std::chrono::high_resolution_clock::time_point mTimeStart;
+
+public:
+  Timer() { reset(); }
+  long long stop() {
+    std::chrono::high_resolution_clock::time_point timeEnd =
+        std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(timeEnd -
+                                                                 mTimeStart)
+        .count();
+  }
+  void reset() { mTimeStart = std::chrono::high_resolution_clock::now(); }
+};
+
+// CPU implementation of Matrix Multiplication
+// The inputs are of the size (DATA_SIZE x DATA_SIZE)
 void mmult_cpu(int *in1, //Input Matrix 1
                int *in2, //Input Matrix 1
                int *out, //Input Matrix 1
@@ -65,7 +52,7 @@ void mmult_cpu(int *in1, //Input Matrix 1
 }
 
 //Functionality to setup OpenCL context and trigger the Kernel
-void mmult_fpga(
+long long mmult_fpga(
     std::vector<int, aligned_allocator<int>> &source_in1, //Input Matrix 1
     std::vector<int, aligned_allocator<int>> &source_in2, //Input Matrix 2
     std::vector<int, aligned_allocator<int>>
@@ -111,6 +98,7 @@ void mmult_fpga(
         exit(EXIT_FAILURE);
     }
 
+    // Create OpenCL Buffers
     cl::Buffer buffer_in1(context,
                           CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                           matrix_size_bytes,
@@ -148,12 +136,18 @@ void mmult_fpga(
 
     q.enqueueMigrateMemObjects({buffer_in1, buffer_in2},
                                0 /* 0 means from host*/);
+    q.finish();
 
     //Launch the kernel
+
+    Timer fpga_timer;
     q.enqueueTask(kernel);
+    q.finish();
+    long long fpga_timer_stop = fpga_timer.stop();
 
     q.enqueueMigrateMemObjects({buffer_output}, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
+    return fpga_timer_stop;
 }
 
 int main(int argc, char **argv) {
@@ -185,11 +179,26 @@ int main(int argc, char **argv) {
     }
 
     //Compute CPU Results
+    Timer cpu_timer;
     mmult_cpu(
         source_in1.data(), source_in2.data(), source_cpu_results.data(), size);
+    long long cpu_timer_stop = cpu_timer.stop();
+    double cpu_throput = size * size * (2 * size - 1);
+    cpu_throput = cpu_throput * 1000000.0 / cpu_timer_stop; // FLOPs
+    std::cout << "----------------------------\n";
+    std::cout << "[INFO] CPU throughput " << cpu_throput  * 1e-9 << " GFLOPS" << std::endl;
+    std::cout << "       CPU execution time " << cpu_timer_stop  * 1e-6 << " s" << std::endl;
+    std::cout << "----------------------------\n";
 
     //Compute FPGA Results
-    mmult_fpga(source_in1, source_in2, source_fpga_results, size);
+    auto fpga_timer_stop = mmult_fpga(source_in1, source_in2, source_fpga_results, size);
+    double fpga_throput = size * size * (2 * size - 1);
+    fpga_throput = fpga_throput * 1000000.0 / fpga_timer_stop; // FLOPs
+
+    std::cout << "----------------------------\n";
+    std::cout << "[INFO] FPGA throughput " << fpga_throput * 1e-9 << " GFLOPS" << std::endl;
+    std::cout << "       FPGA execution time " << fpga_timer_stop  * 1e-6 << " s" << std::endl;
+    std::cout << "----------------------------\n";
 
     //Compare the results of FPGA to CPU
     bool match = true;
