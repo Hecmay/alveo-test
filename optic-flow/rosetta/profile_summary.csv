@@ -1,0 +1,99 @@
+Profile Summary
+Generated on: 2020-07-30 16:15:30
+Msec since Epoch: 1596140130767
+Profiled application: host
+Target platform: 
+Tool version: 2019.2
+XRT build version: 2.3.1301
+Build version branch: 2019.2
+Build version hash: 192e706aea53163a04c574f9b3fe9ed76b6ca471
+Build version date: 2019-10-25 03:04:42
+Target devices: xilinx_u280_xdma_201920_1-1
+Flow mode: System Run
+
+OpenCL API Calls
+API Name,Number Of Calls,Total Time (ms),Minimum Time (ms),Average Time (ms),Maximum Time (ms),
+clCreateProgramWithBinary,2,2650.92,71.5007,1325.46,2579.42,
+clFinish,2,3.19504,0.439013,1.59752,2.75603,
+clCreateKernel,1,2.46505,2.46505,2.46505,2.46505,
+clCreateBuffer,2,0.249447,0.10198,0.124724,0.147467,
+clReleaseKernel,1,0.188877,0.188877,0.188877,0.188877,
+clEnqueueMigrateMemObjects,2,0.119177,0.020368,0.0595885,0.098809,
+clEnqueueTask,1,0.093841,0.093841,0.093841,0.093841,
+clGetExtensionFunctionAddress,1,0.03905,0.03905,0.03905,0.03905,
+clCreateContext,2,0.030012,0.00645,0.015006,0.023562,
+clRetainDevice,8,0.02637,0.001254,0.00329625,0.01283,
+clReleaseDevice,8,0.025947,0.001262,0.00324338,0.005783,
+clReleaseMemObject,6,0.01642,0.00185,0.00273667,0.003656,
+clGetDeviceIDs,2,0.016282,0.003172,0.008141,0.01311,
+clCreateCommandQueue,2,0.012895,0.003687,0.0064475,0.009208,
+clReleaseCommandQueue,2,0.012659,0.005606,0.0063295,0.007053,
+clGetPlatformInfo,4,0.012654,0.002033,0.0031635,0.003897,
+clRetainMemObject,4,0.012119,0.00194,0.00302975,0.003708,
+clGetDeviceInfo,4,0.011392,0.001877,0.002848,0.003647,
+clSetKernelArg,2,0.01045,0.00282,0.005225,0.00763,
+clGetExtensionFunctionAddressForPlatform,1,0.009604,0.009604,0.009604,0.009604,
+clReleaseContext,2,0.007069,0.002332,0.0035345,0.004737,
+clReleaseProgram,1,0.003866,0.003866,0.003866,0.003866,
+
+
+Kernel Execution
+Kernel,Number Of Enqueues,Total Time (ms),Minimum Time (ms),Average Time (ms),Maximum Time (ms),
+test,1,2.21091,2.21091,2.21091,2.21091,
+
+
+Compute Unit Utilization
+Device,Compute Unit,Kernel,Global Work Size,Local Work Size,Number Of Calls,Dataflow Execution,Max Overlapping Executions,Dataflow Acceleration,Total Time (ms),Minimum Time (ms),Average Time (ms),Maximum Time (ms),Clock Frequency (MHz),
+
+
+Data Transfer: Host to Global Memory
+Context:Number of Devices,Transfer Type,Number Of Buffer Transfers,Transfer Rate (MB/s),Average Bandwidth Utilization (%),Average Buffer Size (KB),Total Time (ms),Average Time (ms),
+context1:1,READ,1,8903.415578,92.743912,3571.71,0.401162,0.401162,
+context1:1,WRITE,1,8045.103061,83.803157,3571.71,0.443961,0.443961,
+
+
+Data Transfer: Kernels to Global Memory
+Device,Compute Unit/Port Name,Kernel Arguments,Memory Resources,Transfer Type,Number Of Transfers,Transfer Rate (MB/s),Average Bandwidth Utilization (%),Average Size (KB),Average Latency (ns),
+
+
+Top Data Transfer: Kernels to Global Memory
+Device,Compute Unit,Number of Transfers,Average Bytes per Transfer,Transfer Efficiency (%),Total Data Transfer (MB),Total Write (MB),Total Read (MB),Total Transfer Rate (MB/s),
+
+
+Top Kernel Execution
+Kernel Instance Address,Kernel,Context ID,Command Queue ID,Device,Start Time (ms),Duration (ms),Global Work Size,Local Work Size,
+10480240,test,1,1,xilinx_u280_xdma_201920_1-1,2793.57,2.21091,1:1:1,1:1:1,
+
+
+Top Memory Writes: Host to Global Memory
+Buffer Address,Context ID,Command Queue ID,Start Time (ms),Duration (ms),Buffer Size (KB),Writing Rate(MB/s),
+0,1,1,2793.05,0.443961,3571.71,8045.103061,
+
+
+Top Memory Reads: Host to Global Memory
+Buffer Address,Context ID,Command Queue ID,Start Time (ms),Duration (ms),Buffer Size (KB),Reading Rate(MB/s),
+3571712,1,1,2795.9,0.401162,3571.71,8903.415578,
+
+
+Guidance Parameters
+Parameter,Element,Value,
+DEVICE_EXEC_TIME,xilinx_u250_xdma_201830_2-0,0.000000,
+DEVICE_EXEC_TIME,xilinx_u280_xdma_201920_1-1,2.210914,
+CU_CALLS,xilinx_u280_xdma_201920_1-1|test_1,1,
+MEMORY_BIT_WIDTH,xilinx_u250_xdma_201830_2-0,512,
+MEMORY_BIT_WIDTH,xilinx_u280_xdma_201920_1-1,512,
+MIGRATE_MEM,host,2,
+MEMORY_USAGE,HBM[0],2,
+PLRAM_DEVICE,all,1,
+HBM_DEVICE,all,1,
+KDMA_DEVICE,all,0,
+P2P_DEVICE,all,1,
+P2P_HOST_TRANSFERS,host,0,
+PORT_BIT_WIDTH,test_1/m_axi_gmem0,64,
+PORT_BIT_WIDTH,test_1/m_axi_gmem1,64,
+KERNEL_COUNT,test,1,
+OBJECTS_RELEASED,all,1,
+TRACE_MEMORY,all,FIFO,
+CU_CONTEXT_EN,all,0,
+
+
