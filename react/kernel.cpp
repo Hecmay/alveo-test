@@ -34,11 +34,13 @@ void test(ap_fixed<32, 20> input_image[1][3][32][32], ap_fixed<32, 20> fc[1][10]
           }
         }
       }
-      ap_fixed<32, 20> conv1_LB[1][3][3][34];
-      #pragma array_partition variable=conv1_LB dim=3 complete
-      ap_fixed<32, 20> conv1_WB[1][3][3][3];
-      #pragma array_partition variable=conv1_WB dim=3 complete
-      #pragma array_partition variable=conv1_WB dim=4 complete
+
+      ap_fixed<32, 20> conv1_LB[3][3][34];
+      #pragma HLS array_partition variable=conv1_LB complete dim=2
+      ap_fixed<32, 20> conv1_WB[3][3][3];
+      #pragma HLS array_partition variable=conv1_WB complete dim=2 
+      #pragma HLS array_partition variable=conv1_WB complete dim=3 
+
       ap_fixed<32, 20> conv1_pipe_2[1][16][32][32];
       #pragma HLS stream variable=conv1_pipe_2 depth=2
       conv1_ff: for (ap_int<32> ff = 0; ff < 16; ++ff) {
@@ -47,19 +49,19 @@ void test(ap_fixed<32, 20> input_image[1][3][32][32], ap_fixed<32, 20> fc[1][10]
             conv1_pad_2: for (ap_int<32> conv1_pad_2 = 0; conv1_pad_2 < 3; ++conv1_pad_2) {
           #pragma HLS pipeline
               conv1_pad_1: for (ap_int<32> conv1_pad_1 = 0; conv1_pad_1 < 2; ++conv1_pad_1) {
-                conv1_LB[0][conv1_pad_2][conv1_pad_1][xx_reuse] = conv1_LB[0][conv1_pad_2][(conv1_pad_1 + 1)][xx_reuse];
+                conv1_LB[conv1_pad_2][conv1_pad_1][xx_reuse] = conv1_LB[conv1_pad_2][(conv1_pad_1 + 1)][xx_reuse];
               }
               ap_fixed<32, 20> conv1_pad_temp1;
               conv1_pad_temp1 = conv1_pad_pipe_1[0][conv1_pad_2][yy_reuse][xx_reuse];
-              conv1_LB[0][conv1_pad_2][2][xx_reuse] = conv1_pad_temp1;
+              conv1_LB[conv1_pad_2][2][xx_reuse] = conv1_pad_temp1;
             }
             if (2 <= yy_reuse) {
               conv1_LB_1: for (ap_int<32> conv1_LB_1 = 0; conv1_LB_1 < 3; ++conv1_LB_1) {
                 conv1_LB_2: for (ap_int<32> conv1_LB_2 = 0; conv1_LB_2 < 3; ++conv1_LB_2) {
                   conv1_LB_0: for (ap_int<32> conv1_LB_0 = 0; conv1_LB_0 < 2; ++conv1_LB_0) {
-                    conv1_WB[0][conv1_LB_2][conv1_LB_1][conv1_LB_0] = conv1_WB[0][conv1_LB_2][conv1_LB_1][(conv1_LB_0 + 1)];
+                    conv1_WB[conv1_LB_2][conv1_LB_1][conv1_LB_0] = conv1_WB[conv1_LB_2][conv1_LB_1][(conv1_LB_0 + 1)];
                   }
-                  conv1_WB[0][conv1_LB_2][conv1_LB_1][2] = conv1_LB[0][conv1_LB_2][conv1_LB_1][xx_reuse];
+                  conv1_WB[conv1_LB_2][conv1_LB_1][2] = conv1_LB[conv1_LB_2][conv1_LB_1][xx_reuse];
                 }
               }
               if (2 <= xx_reuse) {
@@ -68,7 +70,7 @@ void test(ap_fixed<32, 20> input_image[1][3][32][32], ap_fixed<32, 20> fc[1][10]
                 conv1_rc: for (ap_int<32> rc = 0; rc < 3; ++rc) {
                   conv1_ry: for (ap_int<32> ry = 0; ry < 3; ++ry) {
                     conv1_rx: for (ap_int<32> rx = 0; rx < 3; ++rx) {
-                      sum = ((ap_fixed<32, 20>)(((ap_fixed<65, 41>)(((ap_fixed<64, 52>)conv1_WB[0][rc][ry][rx]) * ((ap_fixed<64, 52>)w_conv1[ff][rc][ry][rx]))) + ((ap_fixed<65, 41>)sum)));
+                      sum = ((ap_fixed<32, 20>)(((ap_fixed<65, 41>)(((ap_fixed<64, 52>)conv1_WB[rc][ry][rx]) * ((ap_fixed<64, 52>)w_conv1[ff][rc][ry][rx]))) + ((ap_fixed<65, 41>)sum)));
                     }
                   }
                 }
@@ -80,6 +82,7 @@ void test(ap_fixed<32, 20> input_image[1][3][32][32], ap_fixed<32, 20> fc[1][10]
           }
         }
       }
+
       ap_fixed<32, 20> bn1_pipe_3[1][16][32][32];
       #pragma HLS stream variable=bn1_pipe_3 depth=3
       ap_fixed<32, 20> bn1_pipe_115[1][16][32][32];

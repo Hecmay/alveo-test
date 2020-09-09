@@ -21,26 +21,9 @@
 
 
 int main(int argc, char ** argv) {
-  std::cout << " Initialize shared memory...";
-  int32_t* arg_0 = (int32_t*)shmat(/*input_image*/356679762, nullptr, 0);
-  auto input_image = new int32_t[1][3][32][32];
-  for (size_t i0 = 0; i0 < 1; i0++) {
-    for (size_t i1 = 0; i1 < 3; i1++) {
-      for (size_t i2 = 0; i2 < 32; i2++) {
-        for (size_t i3 = 0; i3 < 32; i3++) {
-          input_image[i0][i1][i2][i3] = (int32_t)(arg_0[i3 + i2*32 + i1*1024 + i0*3072]) >> 12;
-        }
-      }
-    }
-  }
 
-  int32_t* arg_1 = (int32_t*)shmat(/*fc*/356712531, nullptr, 0);
-  auto fc = new int32_t[1][10];
-  for (size_t i0 = 0; i0 < 1; i0++) {
-    for (size_t i1 = 0; i1 < 10; i1++) {
-      fc[i0][i1] = (int32_t)(arg_1[i1 + i0*10]) >> 12;
-    }
-  }
+  std::vector<ap_fixed<32,20>, aligned_allocator<ap_fixed<32,20>>> input_image(3*1024);
+  std::vector<ap_fixed<32,20>, aligned_allocator<ap_fixed<32,20>>> fc2(10);
 
   std::cout << " Initialize RTE...";
 
@@ -91,15 +74,16 @@ int main(int argc, char ** argv) {
   ap_int<32> _top;
 
   cl::Kernel kernel(program, "test", &err);
-  cl::Buffer buffer_input_image(context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, sizeof(ap_fixed<32, 20>)*1*3*32*32, input_image, &err);
-  cl::Buffer buffer_fc(context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, sizeof(ap_fixed<32, 20>)*1*10, fc, &err);
+  cl::Buffer buffer_in(context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, sizeof(ap_fixed<32,20>)*3*1024, input_image.data(), &err);
+  cl::Buffer buffer_fc2(context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, sizeof(ap_fixed<32,20>)*1*10, fc2.data(), &err);
 
   // set device kernel buffer
-  err = kernel.setArg(0, buffer_input_image);
-  err = kernel.setArg(1, buffer_fc);
-  err = q.enqueueMigrateMemObjects({buffer_input_image, buffer_fc}, 0/*from host*/);
-  q.finish();
+  err = kernel.setArg(0, buffer_in);
+  err = kernel.setArg(1, buffer_fc2);
 
+  OCL_CHECK(err, err = q.enqueueMigrateMemObjects(
+    {buffer_in},
+        0 /* 0 means from host*/));
   // enqueue kernel function
   std::chrono::duration<double> kernel_time(0);
   auto kernel_start = std::chrono::high_resolution_clock::now();
@@ -111,26 +95,8 @@ int main(int argc, char ** argv) {
   kernel_time = std::chrono::duration<double>(kernel_end - kernel_start);
   auto kernel_time_in_sec = kernel_time.count();
   std::cout << "Execution Time:" <<  kernel_time_in_sec;
-  err = q.enqueueMigrateMemObjects({buffer_input_image, buffer_fc}, CL_MIGRATE_MEM_OBJECT_HOST);
+  err = q.enqueueMigrateMemObjects({buffer_fc2}, CL_MIGRATE_MEM_OBJECT_HOST);
 
   // execution on host 
-
-  for (size_t i0 = 0; i0 < 1; i0++) {
-    for (size_t i1 = 0; i1 < 3; i1++) {
-      for (size_t i2 = 0; i2 < 32; i2++) {
-        for (size_t i3 = 0; i3 < 32; i3++) {
-          arg_0[i3 + i2*32 + i1*1024 + i0*3072] = (int32_t)(input_image[i0][i1][i2][i3]) << 12;
-        }
-      }
-    }
-  }
-  shmdt(arg_0);
-  for (size_t i0 = 0; i0 < 1; i0++) {
-    for (size_t i1 = 0; i1 < 10; i1++) {
-      arg_1[i1 + i0*10] = (int32_t)(fc[i0][i1]) << 12;
-    }
-  }
-  shmdt(arg_1);
-
 
   }
