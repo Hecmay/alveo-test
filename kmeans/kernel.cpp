@@ -1,4 +1,4 @@
-// HASH:1663410798
+// HASH:4094949207
 #include <ap_int.h>
 #include <ap_fixed.h>
 #include <hls_math.h>
@@ -19,8 +19,7 @@ void test(ap_int<32> labels[320], ap_int<32> points[320][32], ap_int<32> means[1
     #pragma HLS INTERFACE s_axilite port=points bundle=control
     #pragma HLS INTERFACE s_axilite port=means bundle=control
     #pragma HLS INTERFACE s_axilite port=return bundle=control
-      ap_int<32> means_on_device[16][32];
-      #pragma HLS array_partition variable=means_on_device complete dim=0
+      #pragma HLS array_partition variable=means complete dim=0
       ap_int<32> points_on_device[320][32];
       #pragma HLS array_partition variable=points_on_device complete dim=2
       points_burst_r1: for (ap_int<32> points_burst_r1 = 0; points_burst_r1 < 32; ++points_burst_r1) {
@@ -70,20 +69,14 @@ void test(ap_int<32> labels[320], ap_int<32> points[320][32], ap_int<32> means[1
         }
         ap_int<32> update_mean;
         update_mean_k: for (ap_int<32> k = 0; k < 16; ++k) {
-        #pragma HLS unroll
           update_mean_d: for (ap_int<32> d = 0; d < 32; ++d) {
           #pragma HLS unroll
-            means_on_device[k][d] = (sum_k[k][d] / num_k[k]);
+            means[k][d] = (sum_k[k][d] / num_k[k]);
           }
         }
       }
       labels_burst_r0: for (ap_int<32> labels_burst_r0 = 0; labels_burst_r0 < 320; ++labels_burst_r0) {
         labels[labels_burst_r0] = labels_on_device[labels_burst_r0];
-      }
-      means_burst_r1: for (ap_int<32> means_burst_r1 = 0; means_burst_r1 < 32; ++means_burst_r1) {
-        means_burst_r0: for (ap_int<32> means_burst_r0 = 0; means_burst_r0 < 16; ++means_burst_r0) {
-          means[means_burst_r0][means_burst_r1] = means_on_device[means_burst_r0][means_burst_r1];
-        }
       }
     }
 }
