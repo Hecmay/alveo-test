@@ -8,18 +8,23 @@
 
 extern "C" {
 void test(ap_uint<64> test_image, 
-    ap_uint<512> train_images_1[1800], 
-    ap_uint<128> train_images_2[1800], 
+    ap_uint<64> train_images[10][1800], 
     ap_uint<8> gknn_mat[10][3]) {
-    #pragma HLS INTERFACE m_axi port=train_images_1 offset=slave bundle=gmem0
-    #pragma HLS INTERFACE m_axi port=train_images_2 offset=slave bundle=gmem1
-    #pragma HLS INTERFACE m_axi port=gknn_mat offset=slave bundle=gmem2
+    #pragma HLS INTERFACE m_axi port=train_images offset=slave bundle=gmem0
+    #pragma HLS INTERFACE m_axi port=gknn_mat offset=slave bundle=gmem1
 
     #pragma HLS INTERFACE s_axilite port=test_image bundle=control
-    #pragma HLS INTERFACE s_axilite port=train_images_1 bundle=control
-    #pragma HLS INTERFACE s_axilite port=train_images_2 bundle=control
+    #pragma HLS INTERFACE s_axilite port=train_images bundle=control
     #pragma HLS INTERFACE s_axilite port=gknn_mat bundle=control
     #pragma HLS INTERFACE s_axilite port=return bundle=control
+
+      ap_uint<64> train_images_dev[10][1800];
+      #pragma HLS array_partition variable=train_images_dev complete dim=1
+      train_images_burst_r1: for (ap_int<32> train_images_burst_r1 = 0; train_images_burst_r1 < 10; ++train_images_burst_r1) {
+        train_images_burst_r0: for (ap_int<32> train_images_burst_r0 = 0; train_images_burst_r0 < 1800; ++train_images_burst_r0) {
+          train_images_dev[train_images_burst_r1][train_images_burst_r0] = train_images[train_images_burst_r1][train_images_burst_r0];
+        }
+      }
 
   ap_uint<6> knn_mat[10][3];
   #pragma HLS array_partition variable=knn_mat complete dim=0
@@ -34,15 +39,11 @@ void test(ap_uint<64> test_image,
   ap_uint<49> knn_update;
   knn_update_y1: for (ap_int<32> y1 = 0; y1 < 1800; ++y1) {
   #pragma HLS pipeline
-    ap_uint<640> temp;
-    temp.range(511,0) = train_images_1[y1];
-    temp.range(639,512) = train_images_2[y1];
     knn_update_x1: for (ap_int<32> x1 = 0; x1 < 10; ++x1) {
     #pragma HLS unroll
       ap_uint<6> dist;
       ap_uint<49> diff;
-      int base = (x1 << 6);
-      diff = (temp.range(base+63,base) ^ test_image);
+      diff = (train_images_dev[x1][y1] ^ test_image);
       ap_uint<6> out;
       out_x2: for (ap_int<32> x2 = 0; x2 < 1; ++x2) {
         out = (ap_uint<6>)0;

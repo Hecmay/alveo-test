@@ -24,14 +24,14 @@ void test(ap_int<32> labels[320], ap_int<32> points[320][32], ap_int<32> means[1
       #pragma HLS array_partition variable=means_on_device complete dim=0
       means_burst_r1: for (ap_int<32> means_burst_r1 = 0; means_burst_r1 < 16; ++means_burst_r1) {
         means_burst_r0: for (ap_int<32> means_burst_r0 = 0; means_burst_r0 < 32; ++means_burst_r0) {
-          means_on_device[means_burst_r0][means_burst_r1] = means[means_burst_r0][means_burst_r1];
+          means_on_device[means_burst_r1][means_burst_r0] = means[means_burst_r1][means_burst_r0];
         }
       }
       ap_int<32> points_on_device[320][32];
       #pragma HLS array_partition variable=points_on_device complete dim=2
-      points_burst_r1: for (ap_int<32> points_burst_r1 = 0; points_burst_r1 < 32; ++points_burst_r1) {
-        points_burst_r0: for (ap_int<32> points_burst_r0 = 0; points_burst_r0 < 320; ++points_burst_r0) {
-          points_on_device[points_burst_r0][points_burst_r1] = points[points_burst_r0][points_burst_r1];
+      points_burst_r1: for (ap_int<32> points_burst_r1 = 0; points_burst_r1 < 320; ++points_burst_r1) {
+        points_burst_r0: for (ap_int<32> points_burst_r0 = 0; points_burst_r0 < 32; ++points_burst_r0) {
+          points_on_device[points_burst_r1][points_burst_r0] = points[points_burst_r1][points_burst_r0];
         }
       }
       ap_int<32> labels_on_device[320];
@@ -42,7 +42,7 @@ void test(ap_int<32> labels[320], ap_int<32> points[320][32], ap_int<32> means[1
           ap_int<32> scalar0 = 100000;
           ap_int<32> scalar1;
           i: for (ap_int<32> i = 0; i < 16; ++i) {
-            ap_int<32> scalar2;
+            ap_int<32> scalar2 = 0;
             i1: for (ap_int<32> i1 = 0; i1 < 32; ++i1) {
               int temp1 = points_on_device[n][i1];
               int temp2 = means_on_device[i][i1];					
