@@ -34,14 +34,15 @@ void test(ap_uint<64> test_image,
   ap_uint<49> knn_update;
   knn_update_y1: for (ap_int<32> y1 = 0; y1 < 1800; ++y1) {
   #pragma HLS pipeline
-    ap_uint<512> temp1 = train_images_1[y1];
-    ap_uint<128> temp2 = train_images_2[y1];
+    ap_uint<640> temp;
+    temp.range(511,0) = train_images_1[y1];
+    temp.range(639,512) = train_images_2[y1];
     knn_update_x1: for (ap_int<32> x1 = 0; x1 < 10; ++x1) {
     #pragma HLS unroll
       ap_uint<6> dist;
       ap_uint<49> diff;
-      ap_uint<64> temp = (x1 > 8) ? (temp2 & (0xffffffffffffffff << (x1-8))) : (temp1 & (0xffffffffffffffff << x1)); 
-      diff = (temp ^ test_image);
+      int base = (x1 << 6);
+      diff = (temp.range(base+63,base) ^ test_image);
       ap_uint<6> out;
       out_x2: for (ap_int<32> x2 = 0; x2 < 1; ++x2) {
         out = (ap_uint<6>)0;
