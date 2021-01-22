@@ -8,13 +8,13 @@
 
 extern "C" {
 void test(ap_uint<64> test_image, ap_uint<64> train_images[10][1800], ap_uint<8> gknn_mat[10][3]) {
-    #pragma HLS INTERFACE m_axi port=train_images offset=slave bundle=gmem0
-    #pragma HLS INTERFACE m_axi port=gknn_mat offset=slave bundle=gmem1
+    // #pragma HLS INTERFACE m_axi port=train_images offset=slave bundle=gmem0
+    // #pragma HLS INTERFACE m_axi port=gknn_mat offset=slave bundle=gmem1
 
-    #pragma HLS INTERFACE s_axilite port=test_image bundle=control
-    #pragma HLS INTERFACE s_axilite port=train_images bundle=control
-    #pragma HLS INTERFACE s_axilite port=gknn_mat bundle=control
-    #pragma HLS INTERFACE s_axilite port=return bundle=control
+    // #pragma HLS INTERFACE s_axilite port=test_image bundle=control
+    // #pragma HLS INTERFACE s_axilite port=train_images bundle=control
+    // #pragma HLS INTERFACE s_axilite port=gknn_mat bundle=control
+    // #pragma HLS INTERFACE s_axilite port=return bundle=control
 
   #pragma HLS array_partition variable=train_images complete dim=1
 
