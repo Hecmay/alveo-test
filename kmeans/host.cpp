@@ -59,12 +59,17 @@ public:
 };
 
 int main(int argc, char ** argv) {
+
+  if (argc != 2) {
+    std::cout << "Usage: " << argv[0] << " <XCLBIN File>" << std::endl;
+    return EXIT_FAILURE;
+  }
                 
   // Prepare input data
   srand (time(NULL));
+  std::vector<bit32, aligned_allocator<bit32>> labels(320);
   std::vector<bit32, aligned_allocator<bit32>> input(SIZE);
   std::vector<bit32, aligned_allocator<bit32>> means(OUTPUT);
-  std::vector<bit32, aligned_allocator<bit32>> labels(320);
   for (int i = 0; i < N * D; ++i)
     input[i] = rand() % 100;
 
@@ -74,7 +79,7 @@ int main(int argc, char ** argv) {
   }
 
 
-  std::string binaryFile = "kernel.xclbin";
+  std::string binaryFile = argv[1];
   size_t input_size_bytes = sizeof(bit32) * SIZE;
   size_t output_size_bytes = sizeof(bit32) * OUTPUT;
   size_t LB_size_bytes = sizeof(bit32) * 320;
@@ -102,7 +107,7 @@ int main(int argc, char ** argv) {
       std::cout << "Failed to program device[" << i << "] with xclbin file!\n";
     } else {
       std::cout << "Device[" << i << "]: program successful!\n";
-      OCL_CHECK(err, krnl = cl::Kernel(program, "top", &err));
+      OCL_CHECK(err, krnl = cl::Kernel(program, "test", &err));
       valid_device++;
       break; // we break because we found a valid device
     }
@@ -115,35 +120,21 @@ int main(int argc, char ** argv) {
   // Allocate Buffer in Global Memory
   // Buffers are allocated using CL_MEM_USE_HOST_PTR for efficient memory and
   // Device-to-host communication
-  cl_mem_ext_ptr_t inBufExt, outBufExt, outBufExtLB;
-
-  inBufExt.obj = input.data();
-  inBufExt.param = 0;
-  inBufExt.flags = bank[0];
-
-  outBufExt.obj = means.data();
-  outBufExt.param = 0;
-  outBufExt.flags = bank[1];
-
-  outBufExtLB.obj = labels.data();
-  outBufExtLB.param = 0;
-  outBufExtLB.flags = bank[2];
+  OCL_CHECK(err, cl::Buffer buffer_label(
+                     context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
+                     LB_size_bytes, labels.data(), &err));
 
   OCL_CHECK(err, cl::Buffer input_buffer(
-                     context, CL_MEM_USE_HOST_PTR | CL_MEM_EXT_PTR_XILINX | CL_MEM_READ_ONLY,
-                     input_size_bytes, &inBufExt, &err));
+                     context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                     input_size_bytes, input.data(), &err));
 
   OCL_CHECK(err, cl::Buffer buffer_output(
-                     context, CL_MEM_USE_HOST_PTR | CL_MEM_EXT_PTR_XILINX | CL_MEM_READ_WRITE,
-                     output_size_bytes, &outBufExt, &err));
+                     context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
+                     output_size_bytes, means.data(), &err));
 
-  OCL_CHECK(err, cl::Buffer buffer_label(
-                     context, CL_MEM_USE_HOST_PTR | CL_MEM_EXT_PTR_XILINX | CL_MEM_READ_WRITE,
-                     LB_size_bytes, &outBufExtLB, &err));
-
-  OCL_CHECK(err, err = krnl.setArg(0, input_buffer));
-  OCL_CHECK(err, err = krnl.setArg(1, buffer_output));
-  OCL_CHECK(err, err = krnl.setArg(2, buffer_label));
+  OCL_CHECK(err, err = krnl.setArg(0, buffer_label));
+  OCL_CHECK(err, err = krnl.setArg(1, input_buffer));
+  OCL_CHECK(err, err = krnl.setArg(2, buffer_output));
 
   // Copy input data to device global memory
   OCL_CHECK(err, err = q.enqueueMigrateMemObjects(

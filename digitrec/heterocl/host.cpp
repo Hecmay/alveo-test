@@ -24,13 +24,10 @@ typedef ap_uint<2> bit2;
 typedef ap_uint<8> bit8;
 typedef ap_uint<16> bit16;
 typedef ap_uint<32> bit32;
+typedef ap_uint<64> bit64;
 
-#define K    16
-#define N    320
-#define D    32
-
-#define SIZE N * D
-#define OUTPUT 16 * 32
+#define SIZE 10 * 1800
+#define OUTPUT 10 * 3
 
 #define MAX_HBM_BANKCOUNT 32
 #define BANK_NAME(n) n | XCL_MEM_TOPOLOGY
@@ -59,25 +56,23 @@ public:
 };
 
 int main(int argc, char ** argv) {
+
+  if (argc != 2) {
+    std::cout << "Usage: " << argv[0] << " <XCLBIN File>" << std::endl;
+    return EXIT_FAILURE;
+  }
                 
   // Prepare input data
   srand (time(NULL));
   std::vector<bit32, aligned_allocator<bit32>> input(SIZE);
-  std::vector<bit32, aligned_allocator<bit32>> means(OUTPUT);
-  std::vector<bit32, aligned_allocator<bit32>> labels(320);
-  for (int i = 0; i < N * D; ++i)
-    input[i] = rand() % 100;
-
-  for (int i = 0; i < K; ++i) {
-    for (int j = 0; j < D; ++j)
-      means[i * D + j] = input[i * D + j];
-  }
+  std::vector<bit32, aligned_allocator<bit32>> output(OUTPUT);
+  for (int i = 0; i < SIZE; ++i)
+    input[i] = rand();
 
 
-  std::string binaryFile = "kernel.xclbin";
-  size_t input_size_bytes = sizeof(bit32) * SIZE;
-  size_t output_size_bytes = sizeof(bit32) * OUTPUT;
-  size_t LB_size_bytes = sizeof(bit32) * 320;
+  std::string binaryFile = argv[1];
+  size_t input_size_bytes = sizeof(bit64) * SIZE;
+  size_t output_size_bytes = sizeof(bit8) * OUTPUT;
   cl_int err;
   cl::Context context;
   cl::Kernel krnl;
@@ -122,19 +117,16 @@ int main(int argc, char ** argv) {
 
   OCL_CHECK(err, cl::Buffer buffer_output(
                      context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
-                     output_size_bytes, means.data(), &err));
+                     output_size_bytes, output.data(), &err));
 
-  OCL_CHECK(err, cl::Buffer buffer_label(
-                     context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,
-                     LB_size_bytes, labels.data(), &err));
-
-  OCL_CHECK(err, err = krnl.setArg(0, input_buffer));
-  OCL_CHECK(err, err = krnl.setArg(1, buffer_output));
-  OCL_CHECK(err, err = krnl.setArg(2, buffer_label));
+  bit64 test_image = 0x52816388fff6246f;
+  OCL_CHECK(err, err = krnl.setArg(0, test_image));
+  OCL_CHECK(err, err = krnl.setArg(1, input_buffer));
+  OCL_CHECK(err, err = krnl.setArg(2, buffer_output));
 
   // Copy input data to device global memory
   OCL_CHECK(err, err = q.enqueueMigrateMemObjects(
-	{input_buffer, buffer_output},
+	{input_buffer},
         0 /* 0 means from host*/));
 
   // Launch the Kernel
