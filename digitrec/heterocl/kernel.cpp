@@ -21,6 +21,7 @@ void test(ap_uint<64> test_image,
       ap_uint<64> train_images_dev[10][1800];
       #pragma HLS array_partition variable=train_images_dev complete dim=1
       train_images_burst_r1: for (ap_int<32> train_images_burst_r1 = 0; train_images_burst_r1 < 10; ++train_images_burst_r1) {
+        #pragma HLS pipeline
         train_images_burst_r0: for (ap_int<32> train_images_burst_r0 = 0; train_images_burst_r0 < 1800; ++train_images_burst_r0) {
           train_images_dev[train_images_burst_r1][train_images_burst_r0] = train_images[train_images_burst_r1][train_images_burst_r0];
         }

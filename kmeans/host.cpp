@@ -140,6 +140,7 @@ int main(int argc, char ** argv) {
   OCL_CHECK(err, err = q.enqueueMigrateMemObjects(
 	{input_buffer, buffer_output},
         0 /* 0 means from host*/));
+  q.finish();
 
   // Launch the Kernel
   // For HLS kernels global and local size is always (1,1,1). So, it is
