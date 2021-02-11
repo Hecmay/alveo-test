@@ -13,26 +13,29 @@
 extern "C" {
 void test(ap_int<32> labels[320], ap_int<32> points[320][32], ap_int<32> means[16][32]) {
     #pragma HLS INTERFACE m_axi port=labels offset=slave bundle=gmem0
-    #pragma HLS INTERFACE m_axi port=points offset=slave bundle=gmem0
-    #pragma HLS INTERFACE m_axi port=means offset=slave bundle=gmem0
+    #pragma HLS INTERFACE m_axi port=points offset=slave bundle=gmem1
+    #pragma HLS INTERFACE m_axi port=means offset=slave bundle=gmem2
     #pragma HLS INTERFACE s_axilite port=labels bundle=control
     #pragma HLS INTERFACE s_axilite port=points bundle=control
     #pragma HLS INTERFACE s_axilite port=means bundle=control
     #pragma HLS INTERFACE s_axilite port=return bundle=control
 
+
+      #pragma HLS dataflow
+
       ap_int<32> means_on_device[16][32];
       #pragma HLS array_partition variable=means_on_device complete dim=0
       means_burst_r1: for (ap_int<32> means_burst_r1 = 0; means_burst_r1 < 16; ++means_burst_r1) {
-        #pragma HLS pipeline
         means_burst_r0: for (ap_int<32> means_burst_r0 = 0; means_burst_r0 < 32; ++means_burst_r0) {
+        #pragma HLS pipeline
           means_on_device[means_burst_r1][means_burst_r0] = means[means_burst_r1][means_burst_r0];
         }
       }
       ap_int<32> points_on_device[320][32];
       #pragma HLS array_partition variable=points_on_device complete dim=2
       points_burst_r1: for (ap_int<32> points_burst_r1 = 0; points_burst_r1 < 320; ++points_burst_r1) {
-        #pragma HLS pipeline
         points_burst_r0: for (ap_int<32> points_burst_r0 = 0; points_burst_r0 < 32; ++points_burst_r0) {
+        #pragma HLS pipeline
           points_on_device[points_burst_r1][points_burst_r0] = points[points_burst_r1][points_burst_r0];
         }
       }
@@ -80,7 +83,9 @@ void test(ap_int<32> labels[320], ap_int<32> points[320][32], ap_int<32> means[1
           }
         }
       }
+
       labels_burst_r0: for (ap_int<32> labels_burst_r0 = 0; labels_burst_r0 < 320; ++labels_burst_r0) {
+        #pragma HLS pipeline
         labels[labels_burst_r0] = labels_on_device[labels_burst_r0];
       }
     }
